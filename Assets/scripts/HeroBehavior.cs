@@ -15,6 +15,11 @@ public class HeroBehavior : MonoBehaviour
     [SerializeField]
     private LayerMask whatIsGround;
 
+    [SerializeField]
+    private GameObject sword;
+
+    public Joystick joystick;
+
     float axis;
 
     //Verifica se o personagem esta' olhando para o lado direito.
@@ -24,23 +29,29 @@ public class HeroBehavior : MonoBehaviour
     Vector2 velocidade;
 
     bool attacking = false;
+    bool throwing = false;
+
 
     bool sliding = false;
 
     private bool isGrounded;
 
     private bool jump;
-    
+
+    private bool moving;
+
+    private bool jumpAttack;
+
     [SerializeField]
     private bool airControl;
 
     [SerializeField]
     private float jumpForce;
 
-    
+
     //Velocidade ma'xima que o personagem pode correr.
     public float MaxVelocidade = 10;
-    
+
     // Use this for initialization
     void Start()
     {
@@ -73,7 +84,8 @@ public class HeroBehavior : MonoBehaviour
     {
         // Seta a varia'vel axis para o valor recebido quando o jogador preciona algum direcional.
         // O Input.GetAxis deve ser usado porque suporta as setas do teclado, controles e joysticks.
-        axis = Input.GetAxis("Horizontal");
+        axis = Input.GetAxisRaw("Horizontal");
+        //axis = joystick.Horizontal;
 
         Rigidbody2D body = GetComponent<Rigidbody2D>();
 
@@ -85,10 +97,10 @@ public class HeroBehavior : MonoBehaviour
         else if (axis < 0 && ladoDireito)
             Flip();
 
-        if(sliding)
+        if (sliding)
             MaxVelocidade += 5;
         //Setamos a variavel velocidade.
-        if(!animator.GetBool("slide") && !animator.GetCurrentAnimatorStateInfo(0).IsTag("attack") && (isGrounded || airControl))
+        if (!animator.GetBool("slide") && !animator.GetCurrentAnimatorStateInfo(0).IsTag("attack") && (isGrounded || airControl))
         {
             velocidade = new Vector2(axis * MaxVelocidade, body.velocity.y);
 
@@ -98,22 +110,24 @@ public class HeroBehavior : MonoBehaviour
 
             //Por ultimo alteramos a velocidade do personagem para gerar o movimento
             body.velocity = velocidade;
-        }
-        
 
-        if(isGrounded && jump)
+            moving = true;
+        }
+
+
+        if (isGrounded && jump)
         {
             isGrounded = false;
-            body.AddForce(new Vector2(0,jumpForce));
+            body.AddForce(new Vector2(0, jumpForce));
             animator.SetTrigger("jump");
 
         }
 
-        if(sliding && !animator.GetCurrentAnimatorStateInfo(0).IsName("sliding"))
+        if (sliding && !animator.GetCurrentAnimatorStateInfo(0).IsName("sliding"))
         {
             animator.SetBool("slide", true);
         }
-        else if(!animator.GetCurrentAnimatorStateInfo(0).IsName("sliding"))
+        else if (!animator.GetCurrentAnimatorStateInfo(0).IsName("sliding"))
         {
             animator.SetBool("slide", false);
         }
@@ -142,28 +156,71 @@ public class HeroBehavior : MonoBehaviour
 
     private void HandleAttacks()
     {
-        if(attacking)
+        if (attacking && isGrounded)
         {
             animator.SetTrigger("attack");
+        }
+
+        if (throwing && isGrounded)
+        {
+            animator.SetTrigger("throw");
+            ThrowSword(0);
+        }
+
+        if (jumpAttack && !isGrounded && !animator.GetCurrentAnimatorStateInfo(1).IsName("JumpAttack"))
+        {
+            animator.SetBool("jumpAttack", true);
+        }
+        if (!jumpAttack && !animator.GetCurrentAnimatorStateInfo(1).IsName("JumpAttack"))
+        {
+            animator.SetBool("jumpAttack", false);
         }
     }
 
     private void HandleInput()
     {
-        if(Input.GetButtonDown("Jump"))
+        /* float vertical = joystick.Vertical;
+        if(vertical >= .5f)
         {
             jump = true;
         }
 
-        if(Input.GetButtonDown("Fire1"))
+        foreach(Touch touch in Input.touches)
         {
-            attacking = true;
+            if(touch.phase == TouchPhase.Began)
+            {
+                attacking = true;
+            }
+        }
+        if(vertical <= -.5f)
+        {
+            sliding = true;
+        } */
+
+        if (Input.GetButtonDown("Jump"))
+        {
+            jump = true;
         }
 
-        if(Input.GetButtonDown("Fire3"))
+
+
+        if (Input.GetButtonDown("Fire1"))
+        {
+            attacking = true;
+            jumpAttack = true;
+
+        }
+
+        if (Input.GetButtonDown("Fire2"))
+        {
+            throwing = true;
+        }
+
+        if (Input.GetButtonDown("Fire3"))
         {
             sliding = true;
         }
+
     }
 
     void LateUpdate()
@@ -176,6 +233,9 @@ public class HeroBehavior : MonoBehaviour
         sliding = false;
         jump = false;
         MaxVelocidade = 10;
+        moving = false;
+        jumpAttack = false;
+        throwing = false;
     }
 
     private bool IsGrounded()
@@ -187,7 +247,7 @@ public class HeroBehavior : MonoBehaviour
                 Collider2D[] colliders = Physics2D.OverlapCircleAll(point.position, groundRadius, whatIsGround);
                 for (int i = 0; i < colliders.Length; i++)
                 {
-                    if(colliders[i].gameObject != gameObject)
+                    if (colliders[i].gameObject != gameObject)
                     {
                         return true;
                     }
@@ -201,14 +261,30 @@ public class HeroBehavior : MonoBehaviour
     {
         if (!isGrounded)
         {
-            animator.SetLayerWeight(1,1);
+            animator.SetLayerWeight(1, 1);
         }
         else
         {
-            animator.SetLayerWeight(1,0);
+            animator.SetLayerWeight(1, 0);
         }
     }
-    
+
+    public void ThrowSword(int value)
+    {
+        if (ladoDireito)
+        {
+            GameObject swordThrowed = (GameObject)Instantiate(sword, transform.position, Quaternion.Euler(new Vector3(0, 0, 0)));
+            swordThrowed.GetComponent<Sword>().Init(Vector2.right);
+            swordThrowed.GetComponent<Sword>().Initialize(Vector2.right);
+        }
+        else
+        {
+            GameObject swordThrowed = (GameObject)Instantiate(sword, transform.position, Quaternion.Euler(new Vector3(0, -180, 0)));
+            swordThrowed.GetComponent<Sword>().Init(Vector2.left);
+            swordThrowed.GetComponent<Sword>().Initialize(Vector2.left);
+        }
+    }
+
 
 
 }
