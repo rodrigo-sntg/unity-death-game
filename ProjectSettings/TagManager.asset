@@ -3,7 +3,13 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Edge
+  - enemyItem
+  - item
+  - PlayerAttackArea
+  - EnemyAttackArea
+  - Enemy
   layers:
   - Default
   - TransparentFX
@@ -15,7 +21,7 @@ TagManager:
   - 
   - ground
   - hero
-  - 
+  - enemy
   - 
   - 
   - 
