@@ -12,6 +12,12 @@ public class IgnoreCollision : MonoBehaviour
 
     private void Awake() => ignoreCollision();
 
+    public IgnoreCollision(Collider2D other, Collider2D monster)
+    {
+        this.other = other;
+        this.others.Add(monster);
+    }
+
     public void ignoreCollision()
     {
         Collider2D collider = GetComponent<Collider2D>();

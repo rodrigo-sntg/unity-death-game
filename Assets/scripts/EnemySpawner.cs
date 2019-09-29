@@ -14,6 +14,12 @@ public class EnemySpawner : MonoBehaviour
     public int maxEnemies = 1;
     private float nextSpawn = 0f;
 
+    [SerializeField]
+    private float minX;
+
+    [SerializeField]
+    private float maxX;
+
     private List<Collider2D> collidersList = new List<Collider2D>();
     // Start is called before the first frame update
     void Start()
@@ -29,7 +35,7 @@ public class EnemySpawner : MonoBehaviour
             if (numberOfEnemies <= maxEnemies)
             {
                 nextSpawn = Time.time + spawnRate;
-                randomX = Random.Range(11, 40);
+                randomX = Random.Range(minX, maxX);
                 placeToSpawn = new Vector2(randomX, transform.position.y);
                 numberOfEnemies++;
 
